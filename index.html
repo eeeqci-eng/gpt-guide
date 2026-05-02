@@ -3,80 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REDDA CHiC | 幸运互动中心</title>
+    <title>REDDA CHiC | 巅峰互动体验</title>
     <style>
         :root {
-            --primary-color: #111; /* 品牌黑色调 */
-            --gold-color: #d4af37;
-            --bg-color: #f4f4f4;
+            --primary-color: #000;
+            --accent-color: #ffde59;
+            --slot-height: 120px;
         }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; flex-direction: column; }
-        
-        .slot-machine { background: #fff; border: 8px solid var(--primary-color); padding: 30px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; width: 350px; }
-        .brand-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; }
-        
-        .display { display: flex; justify-content: space-around; background: #eee; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 2px inset #fff; }
-        .slot { font-size: 50px; width: 80px; height: 100px; line-height: 100px; background: white; border-radius: 5px; box-shadow: 0 4px 0 #ccc; }
+        body { 
+            background: #1a1a1a; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100vh; margin: 0; color: white;
+        }
 
-        .controls button { background: var(--primary-color); color: white; border: none; padding: 15px 40px; font-size: 18px; border-radius: 50px; cursor: pointer; transition: 0.3s; font-weight: bold; }
-        .controls button:hover { background: #333; transform: scale(1.05); }
-        .controls button:disabled { background: #ccc; cursor: not-allowed; }
+        .machine-container {
+            background: linear-gradient(145deg, #333, #000);
+            padding: 40px; border-radius: 30px;
+            border: 5px solid #444;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.1);
+            text-align: center;
+        }
 
-        .result-msg { margin-top: 20px; height: 24px; font-weight: bold; color: var(--gold-color); }
+        .logo { font-size: 28px; font-weight: 900; letter-spacing: 5px; margin-bottom: 30px; color: var(--accent-color); text-shadow: 0 0 10px rgba(255,222,89,0.5); }
+
+        /* 槽位显示区域 */
+        .slots-window {
+            display: flex; gap: 15px; padding: 20px;
+            background: #000; border-radius: 15px;
+            border: 3px solid #222; overflow: hidden;
+            height: var(--slot-height);
+        }
+
+        .slot-column {
+            width: 90px; height: var(--slot-height);
+            background: white; border-radius: 8px;
+            position: relative; overflow: hidden;
+        }
+
+        /* 滚动的长列表 */
+        .icon-list {
+            position: absolute; top: 0; left: 0; width: 100%;
+            display: flex; flex-direction: column;
+            transition: transform 3s cubic-bezier(0.15, 0, 0.15, 1); /* 核心动画：先快后慢 */
+        }
+
+        .icon-item {
+            height: var(--slot-height); line-height: var(--slot-height);
+            font-size: 60px; text-align: center;
+        }
+
+        .controls { margin-top: 40px; }
+        .spin-btn {
+            background: var(--accent-color); color: #000;
+            border: none; padding: 18px 50px; font-size: 22px; font-weight: bold;
+            border-radius: 50px; cursor: pointer;
+            box-shadow: 0 5px 0 #b39b3c, 0 10px 20px rgba(0,0,0,0.4);
+            transition: 0.1s; text-transform: uppercase;
+        }
+        .spin-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b39b3c; }
+        .spin-btn:disabled { background: #555; box-shadow: none; color: #888; cursor: not-allowed; }
+
+        .message { margin-top: 25px; font-size: 18px; height: 30px; color: var(--accent-color); }
+        
+        /* 装饰性高光 */
+        .slot-column::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.2) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.2) 100%);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-<div class="slot-machine">
-    <div class="brand-title">REDDA CHiC</div>
-    <div class="display">
-        <div id="slot1" class="slot">👗</div>
-        <div id="slot2" class="slot">👗</div>
-        <div id="slot3" class="slot">👗</div>
+<div class="machine-container">
+    <div class="logo">REDDA CHiC</div>
+    
+    <div class="slots-window">
+        <div class="slot-column"><div id="list1" class="icon-list"></div></div>
+        <div class="slot-column"><div id="list2" class="icon-list"></div></div>
+        <div class="slot-column"><div id="list3" class="icon-list"></div></div>
     </div>
+
+    <div class="message" id="statusMsg">准备好迎接惊喜了吗？</div>
+
     <div class="controls">
-        <button id="spinBtn" onclick="spin()">抽取专属优惠</button>
+        <button class="spin-btn" id="spinBtn" onclick="startSpin()">SPIN & WIN</button>
     </div>
-    <div id="msg" class="result-msg"></div>
 </div>
 
 <script>
-    const items = ['👗', '👠', '👜', '💄', '💍', '✨'];
-    let isSpinning = false;
+    const icons = ['👗', '👠', '👜', '💄', '💍', '✨', '💎', '🔥'];
+    const listCount = 40; // 列表长度，越长滚得越久
 
-    function spin() {
-        if (isSpinning) return;
-        isSpinning = true;
-        document.getElementById('spinBtn').disabled = true;
-        document.getElementById('msg').innerText = "正在为您寻找惊喜...";
-
-        let count = 0;
-        const maxCounts = 20;
-        const interval = setInterval(() => {
-            document.getElementById('slot1').innerText = items[Math.floor(Math.random() * items.length)];
-            document.getElementById('slot2').innerText = items[Math.floor(Math.random() * items.length)];
-            document.getElementById('slot3').innerText = items[Math.floor(Math.random() * items.length)];
-            count++;
-
-            if (count >= maxCounts) {
-                clearInterval(interval);
-                finishSpin();
-            }
-        }, 100);
+    // 初始化滚动列表
+    function createList(elementId) {
+        const list = document.getElementById(elementId);
+        let content = '';
+        for (let i = 0; i < listCount; i++) {
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            content += `<div class="icon-item">${icon}</div>`;
+        }
+        list.innerHTML = content;
     }
 
-    function finishSpin() {
-        isSpinning = false;
-        document.getElementById('spinBtn').disabled = false;
-        const s1 = document.getElementById('slot1').innerText;
-        const s2 = document.getElementById('slot2').innerText;
-        const s3 = document.getElementById('slot3').innerText;
+    createList('list1');
+    createList('list2');
+    createList('list3');
 
-        if (s1 === s2 && s2 === s3) {
-            document.getElementById('msg').innerText = "恭喜！获得 50元 无门槛优惠券";
-        } else {
-            document.getElementById('msg').innerText = "差点就中奖了，再试一次吧！";
+    function startSpin() {
+        const btn = document.getElementById('spinBtn');
+        const msg = document.getElementById('statusMsg');
+        btn.disabled = true;
+        msg.innerText = "祝你好运...";
+
+        // 生成中奖结果
+        const result = [
+            Math.floor(Math.random() * icons.length),
+            Math.floor(Math.random() * icons.length),
+            Math.floor(Math.random() * icons.length)
+        ];
+
+        // 动画逻辑：让每一列滚到指定位置
+        for (let i = 1; i <= 3; i++) {
+            const list = document.getElementById('list' + i);
+            
+            // 先重置位置
+            list.style.transition = 'none';
+            list.style.transform = 'translateY(0)';
+            
+            // 强制刷新
+            list.offsetHeight; 
+
+            // 设置最终位置（倒数第N个图标）
+            const finalIcon = icons[result[i-1]];
+            const items = list.querySelectorAll('.icon-item');
+            items[listCount - 1].innerText = finalIcon; // 确保最后一个是结果
+
+            const targetY = -(listCount - 1) * 120;
+            list.style.transition = `transform ${2 + i * 0.5}s cubic-bezier(0.15, 0, 0.15, 1)`;
+            list.style.transform = `translateY(${targetY}px)`;
         }
+
+        // 判定结果
+        setTimeout(() => {
+            btn.disabled = false;
+            if (result[0] === result[1] && result[1] === result[2]) {
+                msg.innerText = "🏆 绝了！品牌尊享大奖！";
+                msg.style.color = "#ffde59";
+            } else {
+                msg.innerText = "继续加油，好运在下一抽！";
+                msg.style.color = "#aaa";
+            }
+        }, 3500);
     }
 </script>
 
